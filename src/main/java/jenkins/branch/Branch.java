@@ -99,7 +99,16 @@ public class Branch {
      * @since 0.2-beta-7
      */
     public String getEncodedName() {
-        return Util.rawEncode(getName());
+        return Util.rawEncode(getName()).replaceAll("%",".");
+    }
+
+    /**
+     * Gets a branch name suitable for use in by Visual Studio.
+     * See https://msdn.microsoft.com/en-us/library/bb546106.aspx for more details.
+     * @return {@link #getEncodedName} with Visual Studio special characters escaped
+     */
+    public String getVisuaStudioSafeName() {
+        return Util.rawEncode(getEncodedName());
     }
 
     /**
