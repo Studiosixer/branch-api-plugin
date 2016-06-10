@@ -44,7 +44,6 @@ import hudson.model.View;
 import hudson.scm.PollingResult;
 import hudson.security.ACL;
 import hudson.security.Permission;
-import hudson.triggers.SCMTrigger;
 import hudson.util.PersistedList;
 import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.SCMHeadObserver;
@@ -282,8 +281,7 @@ public abstract class MultiBranchProject<P extends Job<P, R> & TopLevelItem,
      * {@inheritDoc}
      */
     public void onSCMSourceUpdated(@NonNull SCMSource source) {
-        SCMTrigger.SCMTriggerCause cause = new SCMTrigger.SCMTriggerCause(source.getDescriptor().getDisplayName());
-        scheduleBuild(0, cause);
+        scheduleBuild(0, new BranchIndexingCause());
     }
 
     /**
@@ -363,7 +361,7 @@ public abstract class MultiBranchProject<P extends Job<P, R> & TopLevelItem,
     }
 
     private void scheduleBuild(BranchProjectFactory<P,R> factory, final P item, SCMRevision revision, TaskListener listener, String name) {
-        if (ParameterizedJobMixIn.scheduleBuild2(item, 0, new CauseAction(new SCMTrigger.SCMTriggerCause("Branch indexing"))) != null) {
+        if (ParameterizedJobMixIn.scheduleBuild2(item, 0, new CauseAction(new BranchIndexingCause())) != null) {
             listener.getLogger().println("Scheduled build for branch: " + name);
             try {
                 factory.setRevisionHash(item, revision);
@@ -371,7 +369,7 @@ public abstract class MultiBranchProject<P extends Job<P, R> & TopLevelItem,
                 e.printStackTrace(listener.error("Could not update last revision hash"));
             }
         } else {
-            listener.getLogger().println("Failed to schedule build for branch: " + name);
+            listener.getLogger().println("Did not schedule build for branch: " + name);
         }
     }
 
@@ -422,7 +420,9 @@ public abstract class MultiBranchProject<P extends Job<P, R> & TopLevelItem,
      *
      * @param name the name of the branch
      * @return the named branch job or {@code null} if no such branch exists.
+     * @deprecated use {@link #getItem(String)} or {@link #getJob(String)} directly
      */
+    @Deprecated
     @CheckForNull
     @SuppressWarnings("unused")// by stapler for URL binding
     public P getBranch(String name) {
@@ -453,15 +453,6 @@ public abstract class MultiBranchProject<P extends Job<P, R> & TopLevelItem,
         }
     }
     private static final Set<Permission> SUPPRESSED_PERMISSIONS = ImmutableSet.of(Item.CONFIGURE, Item.DELETE, View.CONFIGURE, View.CREATE, View.DELETE);
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public String getUrlChildPrefix() {
-        return "branch";
-    }
 
     /**
      * {@inheritDoc}
